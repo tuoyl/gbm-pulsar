@@ -196,15 +196,13 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
         hour = '*'
         # FIXME: now whole day is used, hour does not working
 
-    wildcast = os.path.join(gbm_data_dir, year, month, day,
-                "glg_tte_n*_{}{}{}_{}z_v00.fit.gz".format(year[2:], month, day, hour))
     event_list = glob.glob(
-            os.path.join(gbm_data_dir, year, month, day,
+            os.path.join(gbm_data_dir, year, month, day, 'current',
                 "glg_tte_n*_{}{}{}_{}z_v00.fit.gz".format(year[2:], month, day, hour)))
     poshist = glob.glob(
-            os.path.join(gbm_data_dir, year, month, day,
+            os.path.join(gbm_data_dir, year, month, day, 'current',
                 "glg_poshist_all_{}{}{}_v00.fit".format(year[2:], month, day)))
-    if len(poshist) is not 0:
+    if len(poshist) != 0:
         poshist = poshist[-1]
 
     return event_list, poshist
