@@ -7,6 +7,7 @@ import argparse
 import datetime
 import glob
 import os
+import wget
 from tqdm import tqdm
 from astropy.io import fits
 from astropy.table import Table
@@ -39,17 +40,17 @@ NOTICE = """
 
 Usage:
 
-        python GBM_pusar_pipeline.py --gbm_dir="/path/to/GRM/data" \\
-                -tstart='2022-07-27T00:00:00' --tstop=''2022-07-28T00:00:00' \\
+        python GBM_pulsar_pipeline.py --gbm_dir="/path/to/GRM/data" \\
+                --tstart='2022-07-27T00:00:00' --tstop='2022-07-28T00:00:00' \\
                 --output_dir="/path/to/save/data" \\
                 --stem="gbmCrab" --ra=83.883225 --dec=22.014458333333334
 
     some optional:
 
-        python GBM_pusar_pipeline.py --gbm_dir="/path/to/GRM/data" \\
-                -tstart='2022-07-27T00:00:00' --tstop=''2022-07-28T00:00:00' \\
+        python GBM_pulsar_pipeline.py --gbm_dir="/path/to/GRM/data" \\
+                --tstart='2022-07-27T00:00:00' --tstop='2022-07-28T00:00:00' \\
                 --output_dir="/path/to/save/data" \\
-                --stem="gbmCrab" --ra=83.883225 --dec=22.014458333333334 \\
+                --stem="gbmCrab" --ra=83.883225 --dec=22.014458333333334
                 --energylow=8 --energyhigh=25 \\
                 --store_pha --store_det
     """
@@ -104,6 +105,11 @@ def parse_args():
             help="Declination for the source (degree, J200)")
 
     # optional
+    parser.add_argument(
+            "--download",
+            action="store_true",
+            help="Retrieve data from GBM FTP, if data does not exist")
+
     parser.add_argument(
             "--energylow",
             type=float,
@@ -188,6 +194,50 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
 
     return event_list, poshist
 
+def retrieve_data(data_dir, year, month, day,
+        ftp_link="https://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/daily/",
+        detectors = ['n0','n1','n2','n3','n4','n5','n6','n7','n8','n9','na','nb']):
+
+    """
+    Retrieve data for specfic day from GBM FTP
+    e.g.:
+    glg_tte_n0_220201_23z_v00.fit.gz
+    glg_poshist_all_220301_v00.fit
+
+    data_dir: string
+        the directory to save ALL GRB data (parent dir)
+    """
+
+    year = str(year)
+    month= str(month).zfill(2)
+    day  = str(day).zfill(2)
+
+    # Creating folder
+    out_dir = os.path.join(data_dir, year, month, day)
+    if not os.path.exists(out_dir):
+        print(f"...Making directory {out_dir}...")
+        os.system("mkdir -p {}".format(
+            out_dir))
+
+    poshist  = f"glg_poshist_all_{str(year)[2:]}{month}{day}_v00.fit"
+    if os.path.exists(os.path.join(out_dir, poshist)):
+        print(f"...{poshist} already exists...")
+    else:
+        url = os.path.join(ftp_link, year, month, day, 'current', poshist)
+        wget.download(url, out_dir+'/')
+
+    # Download Events
+    for det in detectors:
+        for hour in np.linspace(0, 23, 24, dtype=int):
+            hstr = str(hour).zfill(2)
+            evtfile = f"glg_tte_{det}_{str(year)[2:]}{month}{day}_{hstr}z_v00.fit.gz"
+            if os.path.exists(out_dir, evtfile):
+                continue
+            else:
+                url = os.path.join(ftp_link, year, month, day, 'current', evtfiles)
+                wget.download(url, out_dir)
+
+
 def _resolve_evtname(evtfile):
     """
     resolve the detector name and the met array from an
@@ -241,6 +291,13 @@ def main():
         year = next_day.year
         month= next_day.month
         day  = next_day.day
+
+        if args.download:
+            retrieve_data(
+                    args.gbm_dir,
+                    year, month, day,
+                    detectors=detectors)
+
         print(f"...Analyzing data in {next_day}...")
 
         if next_day == begin_day:
