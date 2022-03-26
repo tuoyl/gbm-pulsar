@@ -121,7 +121,7 @@ def parse_args():
             help="To carry out barycentric correction")
 
     parser.add_argument(
-            "--jplehem",
+            "--jplephem",
             type=str,
             help="specify the JPLEPH file")
 
@@ -373,7 +373,7 @@ def main():
                         dec=args.dec,
                         orbit=poshist,
                         jplephem=args.jplephem)
-                TDB_one_hour = met_one_hour - delta_t
+                TDB_one_hour = met_one_hour + delta_t
                 OUT_DATA = [met_one_hour, pha_one_hour, TDB_one_hour]
                 OUT_COLN = ['TIME', "PHA", "TDB"]
             else:
