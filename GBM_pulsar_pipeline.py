@@ -3,6 +3,7 @@
 
 import numpy as np
 from GBM_data_filter import UTC_TO_MET, filter
+from barycor.barycor import barycor
 import argparse
 import datetime
 import glob
@@ -29,6 +30,8 @@ The input paramters should be:
     1. Energy (keV) range to filtering (default is to keep all PHA)
     2. whether to store the PHA information (default is No for the sake of storage saving)
     3. whether to store the Detector information (default is No for the sake of storage saving)
+    4. whether to Download data
+    5. whether to execute Barycentric correction
 """
 
 
@@ -109,6 +112,16 @@ def parse_args():
             "--download",
             action="store_true",
             help="Retrieve data from GBM FTP, if data does not exist")
+
+    parser.add_argument(
+            "--barycor",
+            action="store_true",
+            help="To carry out barycentric correction")
+
+    parser.add_argument(
+            "--jplehem",
+            type=str,
+            help="specify the JPLEPH file")
 
     parser.add_argument(
             "--energylow",
@@ -347,11 +360,28 @@ def main():
                 det_one_hour = np.append(det_one_hour,
                         np.ones(mask.size)*int(det_headname.split('_')[1]))
 
+            # Barycentric Correction
+            if args.barycor:
+                orbit = fits.open(poshist)
+                mjdreff = orbit[1].header['mjdreff']
+                mjdrefi = orbit[1].header['mjdrefi']
+                mjd = (met_one_hour/86400)+mjdreff+mjdrefi
+                delta_t = barycor(mjd,
+                        ra=args.ra,
+                        dec=args.dec,
+                        orbit=poshist,
+                        jplephem=args.jplephem)
+                TDB_one_hour = met_one_hour - delta_t
+                OUT_DATA = [met_one_hour, pha_one_hour, TDB_one_hour]
+                OUT_COLN = ['TIME', "PHA", "TDB"]
+            else:
+                OUT_DATA = [met_one_hour, pha_one_hour]
+                OUT_COLN = ['TIME', "PHA"]
+
             # Save data
             outname = os.path.join(args.output_dir, args.stem+"_{}_{}z.fits".format(next_day, str(hour).zfill(2)))
             #TODO store_pha, store_det, and energy selection not available
-            save_to_fits(outname, [met_one_hour, pha_one_hour], ['TIME', "PHA"])
-
+            save_to_fits(outname, OUT_DATA, OUT_COLN)
         next_day += one_day
 
 
