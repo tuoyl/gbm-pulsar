@@ -22,3 +22,6 @@ python GBM_pulsar_pipeline.py --gbm_dir="/path/to/GRM/data" \
         --energylow=8 --energyhigh=25 \
         --store_pha --store_det
 ```
+
+Here's one day profile folded by Jodrell Bank emphemeris, barycorr and selection works fine:
+![profile](img/gbm_oneday_profile.png)

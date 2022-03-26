@@ -2,6 +2,7 @@ import astropy.io.fits as pyfits
 import numpy as np
 from jplephem.spk import SPK
 from .tdb2tdt import tdb2tdt
+import os
 
 # To run the code one needs to have access to one of the ephemeride files provided by jpl:
 # https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/
@@ -71,9 +72,6 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
         t = t[(t>minmet-1)&(t<maxmet+1)]/86400 + mjdref
 
         # interpolate orbit to observed time and convert to km and km/s
-        print(date)
-        print(t)
-        print(orbit[1].data.field('pos_x')[mask]/1000.)
         x_s = np.interp(date, t, orbit[1].data.field('pos_x')[mask]/1000.)
         y_s = np.interp(date, t, orbit[1].data.field('pos_y')[mask]/1000.)
         z_s = np.interp(date, t, orbit[1].data.field('pos_z')[mask]/1000.)
