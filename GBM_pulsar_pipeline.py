@@ -367,6 +367,11 @@ def main():
                 det_one_hour = np.append(det_one_hour,
                         np.ones(mask.size)*int(det_headname.split('_')[1]))
 
+            # empty
+            if met_one_hour.size == 0:
+                print("No photons...")
+                continue
+
             # Barycentric Correction
             if args.barycor:
                 orbit = fits.open(poshist)
