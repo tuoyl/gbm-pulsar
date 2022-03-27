@@ -266,6 +266,9 @@ def _resolve_evtname(evtfile):
     hdulist = fits.open(evtfile)
 
     det_shortname = filename.split('_')[2]
+    if len(hdulist) < 4:
+        ## File Error
+        raise IOError("File {} extension error".format(filename)) 
     det_headname = hdulist[2].header['DETNAM']
     met = hdulist[2].data.field("TIME")
     pha = hdulist[2].data.field("PHA")
@@ -344,7 +347,11 @@ def main():
             for evtfile in tqdm(evtfiles):
                 if os.path.basename(evtfile).split('_')[4] != str(hour).zfill(2)+'z':
                     continue
-                det_shortname, det_headname, met, pha = _resolve_evtname(evtfile)
+                try:
+                    det_shortname, det_headname, met, pha = _resolve_evtname(evtfile)
+                except IOError:
+                    print("file {} Extension error".format(evtfile))
+                    continue
                 met_filtered, mask = filter(poshist,
                         detector=det_shortname,
                         radec=np.array([args.ra, args.dec]),
