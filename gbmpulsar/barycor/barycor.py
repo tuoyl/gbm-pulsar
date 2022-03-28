@@ -65,7 +65,10 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
         #    t = orbit[1].data.field('time')
         #except:
         #    t = orbit[1].data.field('sclk_utc')
-        t = orbit[1].data.field('sclk_utc')
+        try:
+            t = orbit[1].data.field('sclk_utc')
+        except:
+            t = orbit[1].data.field("TIME")
 
         #mi, ma = t.searchsorted([minmet,maxmet])
         #t = t[mi:ma]/86400.+mjdref
@@ -73,13 +76,22 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
         t = t[(t>minmet-1)&(t<maxmet+1)]/86400 + mjdref
 
         # interpolate orbit to observed time and convert to km and km/s
-        x_s = np.interp(date, t, orbit[1].data.field('pos_x')[mask]/1000.)
-        y_s = np.interp(date, t, orbit[1].data.field('pos_y')[mask]/1000.)
-        z_s = np.interp(date, t, orbit[1].data.field('pos_z')[mask]/1000.)
+        try:
+            x_s = np.interp(date, t, orbit[1].data.field('pos_x')[mask]/1000.)
+            y_s = np.interp(date, t, orbit[1].data.field('pos_y')[mask]/1000.)
+            z_s = np.interp(date, t, orbit[1].data.field('pos_z')[mask]/1000.)
 
-        vx_s = np.interp(date, t, orbit[1].data.field('vel_x')[mask]/1000.)
-        vy_s = np.interp(date, t, orbit[1].data.field('vel_y')[mask]/1000.)
-        vz_s = np.interp(date, t, orbit[1].data.field('vel_z')[mask]/1000.)
+            vx_s = np.interp(date, t, orbit[1].data.field('vel_x')[mask]/1000.)
+            vy_s = np.interp(date, t, orbit[1].data.field('vel_y')[mask]/1000.)
+            vz_s = np.interp(date, t, orbit[1].data.field('vel_z')[mask]/1000.)
+        except:
+            x_s = np.interp(date, t, orbit[1].data.field('x')[mask]/1000.)
+            y_s = np.interp(date, t, orbit[1].data.field('y')[mask]/1000.)
+            z_s = np.interp(date, t, orbit[1].data.field('z')[mask]/1000.)
+
+            vx_s = np.interp(date, t, orbit[1].data.field('vx')[mask]/1000.)
+            vy_s = np.interp(date, t, orbit[1].data.field('vy')[mask]/1000.)
+            vz_s = np.interp(date, t, orbit[1].data.field('vz')[mask]/1000.)
 
 
 
@@ -121,7 +133,7 @@ def cp_table(old_table):
     col_names = old_table.names
     col_type = old_table.formats
     cp_col = []
-    for i in xrange(len(col_names)):
+    for i in range(len(col_names)):
         cp_col.append( fits.Column(name=col_names[i], array=old_table.field(col_names[i]), format=col_type[i]) )
     new_table = fits.BinTableHDU.from_columns(cp_col)
     return new_table
@@ -131,7 +143,7 @@ def write_file(datafile, tdb):
     prim_hdr_old = hdulist_old[0].header
     prim_hdr_new = fits.PrimaryHDU(header=prim_hdr_old)
     hdr_all = []
-    for i in xrange(len(hdulist_old)):
+    for i in range(len(hdulist_old)):
         hdr_all.append(hdulist_old[i].header)
     #modify main table
     table1 = hdulist_old[1].data
@@ -141,7 +153,7 @@ def write_file(datafile, tdb):
     if 'TDB' not in col_names:
         print("...adding a column to event file...")
         new_col = fits.Column(name='TDB', array=tdb, format='1D')
-        for i in xrange(len(col_names)):
+        for i in range(len(col_names)):
             cp_col.append( fits.Column(name=col_names[i], array=table1.field(col_names[i]), format=col_type[i]) )
         cp_col.append(new_col)
         new_table1 = fits.BinTableHDU.from_columns(cp_col)
@@ -155,7 +167,7 @@ def write_file(datafile, tdb):
         #update header and info
         hdr_all[1].append('TTYPE' + str(hdr_all[1]['TFIELDS']), 'TDB', 'label for field')
         hdr_all[1].append('TFORM' + str(hdr_all[1]['TFIELDS']), '1D', 'format of field')
-        for i in xrange(len(hdulist_new)):
+        for i in range(len(hdulist_new)):
             hdulist_new[i].header = hdr_all[i]
         hdulist_new.writeto(datafile, overwrite=True)
         hdulist_new.close()
@@ -204,20 +216,26 @@ def parse_args():
             type=float,
             help="Declination of the source")
 
+    parser.add_argument(
+            "--jplephem",
+            type=str,
+            help="the JPL Ephemeris file")
+
     return parser.parse_args()
 
 def main():
     args = parse_args()
 
     hdulist = fits.open(args.evtfile)
-    met = hdulist[args.extnum].data.field(arg.colnum)
+    met = hdulist[args.extnum].data.field(args.colnum)
     orbit = fits.open(args.orbitfile)
     mjdref = orbit[1].header['mjdrefi'] + orbit[1].header['mjdreff']
     mjd = met/86400. + mjdref
     dtime = barycor(mjd,
             ra=args.ra,
             dec=args.dec,
-            orbit=args.orbitfile)
+            orbit=args.orbitfile,
+            jplephem=args.jplephem)
     print("Finish bary correction...")
     print("Writing file...")
     write_file(args.evtfile, met+dtime)
