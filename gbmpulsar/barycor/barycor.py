@@ -227,7 +227,8 @@ def parse_args():
             "--jplephem",
             type=str,
             required=True,
-            help="the JPL Ephemeris file")
+            help="the JPL Ephemeris file, files could be downloaded from \
+                    https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/")
 
     parser.add_argument(
             "--accelerate",

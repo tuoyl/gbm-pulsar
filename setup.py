@@ -114,8 +114,6 @@ setup(
         'console_scripts': [
             "gbm-pulsar-pipeline = gbmpulsar.GBM_pulsar_pipeline:main",
             "gbm-barycor = gbmpulsar.barycor.barycor:main",
-#            "generate-csp = grmtools.console_scripts.generate_csp:main",
-#            "generate-clc = grmtools.console_scripts.generate_clc:main",
             ],
     },
     install_requires=REQUIRED,
