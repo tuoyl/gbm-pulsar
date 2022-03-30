@@ -265,7 +265,7 @@ def main():
     mjdref = orbit[1].header['mjdrefi'] + orbit[1].header['mjdreff']
     mjd = met/86400. + mjdref
 
-    dtime_sample = barycor(mjd_sample,
+    dtime = barycor(mjd,
             ra=args.ra,
             dec=args.dec,
             orbit=args.orbitfile,
