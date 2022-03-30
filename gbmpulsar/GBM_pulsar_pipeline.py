@@ -147,6 +147,14 @@ def parse_args():
             action="store_true",
             help="to store the Detector column to output file")
 
+    parser.add_argument(
+            "--accelerate",
+            action="store_true",
+            required=False,
+            default=False,
+            help="to accelerate the barycentric correction processes by barycor sampling photons, and interpolate\
+                    the barycored arrival times for whole time series")
+
     return parser.parse_args()
 
 def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='left'):
@@ -382,7 +390,8 @@ def main():
                         ra=args.ra,
                         dec=args.dec,
                         orbit=poshist,
-                        jplephem=args.jplephem)
+                        jplephem=args.jplephem,
+                        accelerate=args.accelerate)
                 TDB_one_hour = met_one_hour + delta_t
                 OUT_DATA = [met_one_hour, pha_one_hour, TDB_one_hour]
                 OUT_COLN = ['TIME', "PHA", "TDB"]
