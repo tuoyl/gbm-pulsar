@@ -13,7 +13,7 @@ import os
 
 c = 299792.458 # km/s  (kilometers per second)
 
-def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10, jplephem=None):
+def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10, jplephem=None, accelerate=False):
     """Apply barycentric correction to vector
        date (in MJD) assuming coordinates ra,dec given in degrees
        optionally use orbit of a satellinte in heasarc format
@@ -27,6 +27,15 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
        """
     ra = np.radians(np.double(ra))
     dec = np.radians(np.double(dec))
+
+
+    if accelerate:
+        date_raw = date
+        print("Accelerating barycor")
+        ## Draw photons for accelerate
+        N_segment = int(date_raw.size/60) # divide time into 60 segnents
+        date = np.linspace(date_raw.min(), date_raw.max(), N_segment)
+
     jd =  np.array(date,dtype=np.float64) + 2400000.5
     if not os.path.exists(jplephem):
         raise FileNotFoundError("File {} not found".format(jplephem))
@@ -125,6 +134,13 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
     costh = ((x_obs-x_sun)*x_obj+(y_obs-y_sun)*y_obj + (z_obs-z_sun)*z_obj)/sun_dist
     shapiro_corr = - 9.8509819e-06*np.log(1.+costh)
     corr = geo_corr + ocor + einstein_corr - shapiro_corr
+
+    ## Interpolate for accelerated photons
+    if accelerate:
+        ## interpolate
+        corr_fun = interp1d(date, corr, kind='quadratic')
+        corr = corr_fun(date_raw)
+
     if return_correction:
         return corr
     else:
@@ -249,52 +265,13 @@ def main():
     mjdref = orbit[1].header['mjdrefi'] + orbit[1].header['mjdreff']
     mjd = met/86400. + mjdref
 
-    """
-    hdulist = fits.open("../../test/gbmCrab_2022-03-15_01z.fits.gz")
-time = hdulist[1].data.field("TIME")
-tdb = hdulist[1].data.field("TDB")
-N_seg = int(time.size/60)
-time_sample = np.linspace(time.min(), time.max(), N_seg)
+    dtime_sample = barycor(mjd_sample,
+            ra=args.ra,
+            dec=args.dec,
+            orbit=args.orbitfile,
+            jplephem=args.jplephem,
+            accelerate=args.accelerate)
 
-orbitfile = "../../test/glg_poshist_all_220315_v00.fit"
-orbit = fits.open("../../test/glg_poshist_all_220315_v00.fit")
-mjdref = orbit[1].header['mjdrefi'] + orbit[1].header['mjdreff']
-mjd_sample = (time_sample/86400) + mjdref
-
-delta_t = barycor(mjd_sample, ra=83.883225, dec=22.014458333333334,
-                  orbit=orbitfile,
-                  jplephem="../barycor/de421.bsp")
-delta_t_accelerated = delta_t
-In [93]:
-%matplotlib inline
-fig, (ax1) = plt.subplots(1,1, figsize=(10, 8))
-ax1.errorbar(time_sample, delta_t_accelerated, fmt='.', label='delta time of sampled photon')
-plt.legend()
-
-from scipy.interpolate import interp1d
-f = interp1d(time_sample, delta_t, kind='quadratic')
-ax1.errorbar(time, f(time), fmt='^', label='delta time by interpolation')
-"""
-    if args.accelerate:
-        # accelerate bary by drawing photons
-        print("...Accelerating barycor (no accuracy lose, no compute expense gain)...")
-        N_segment = int(mjd.size/60) # divide time into 60 segnents
-        mjd_sample = np.linspace(mjd.min(), mjd.max(), N_segment)
-        dtime_sample = barycor(mjd_sample,
-                ra=args.ra,
-                dec=args.dec,
-                orbit=args.orbitfile,
-                jplephem=args.jplephem)
-        ## interpolate
-        dtime_fun = interp1d(mjd_sample, dtime_sample, kind='quadratic')
-        dtime = dtime_fun(mjd)
-
-    else:
-        dtime = barycor(mjd,
-                ra=args.ra,
-                dec=args.dec,
-                orbit=args.orbitfile,
-                jplephem=args.jplephem)
     print("Finish bary correction...")
     print("Writing file...")
     write_file(args.evtfile, met+dtime)
