@@ -57,7 +57,7 @@ Usage:
                 --stem="gbmCrab" --ra=83.883225 --dec=22.014458333333334 \\
                 --barycor --jplephem="./barycor/de421.bsp" \\
                 --energylow=8 --energyhigh=25 \\
-                --store_pha --store_det
+                --store_pha --store_det --accelerate
     """
 
 def parse_args():
