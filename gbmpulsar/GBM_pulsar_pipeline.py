@@ -206,10 +206,10 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
 
     event_list = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
-                "glg_tte_n*_{}{}{}_{}z_v00.fit.gz".format(year[2:], month, day, hour)))
+                "glg_tte_n*_{}{}{}_{}z_v*.fit.gz".format(year[2:], month, day, hour)))
     poshist = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
-                "glg_poshist_all_{}{}{}_v00.fit".format(year[2:], month, day)))
+                "glg_poshist_all_{}{}{}_v*.fit".format(year[2:], month, day)))
     if len(poshist) != 0:
         poshist = poshist[-1]
 
@@ -217,7 +217,7 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
 
 def retrieve_data(data_dir, year, month, day,
         ftp_link="https://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/daily/",
-        detectors = ['n0','n1','n2','n3','n4','n5','n6','n7','n8','n9','na','nb']):
+        detectors = ['n0','n1','n2','n3','n4','n5','n6','n7','n8','n9','na','nb', 'b0', 'b1']):
 
     """
     Retrieve data for specfic day from GBM FTP
@@ -234,30 +234,62 @@ def retrieve_data(data_dir, year, month, day,
     day  = str(day).zfill(2)
 
     # Creating folder
-    out_dir = os.path.join(data_dir, year, month, day)
+    out_dir = os.path.join(data_dir, year, month, day, 'current')
     if not os.path.exists(out_dir):
         print(f"...Making directory {out_dir}...")
         os.system("mkdir -p {}".format(
             out_dir))
 
-    poshist  = f"glg_poshist_all_{str(year)[2:]}{month}{day}_v00.fit"
-    if os.path.exists(os.path.join(out_dir, poshist)):
-        print(f"...{poshist} already exists...")
-    else:
-        url = os.path.join(ftp_link, year, month, day, 'current', poshist)
-        wget.download(url, out_dir+'/')
-
-    # Download Events
-    for det in detectors:
-        for hour in np.linspace(0, 23, 24, dtype=int):
-            hstr = str(hour).zfill(2)
-            evtfile = f"glg_tte_{det}_{str(year)[2:]}{month}{day}_{hstr}z_v00.fit.gz"
-            if os.path.exists(out_dir, evtfile):
-                continue
+    # Download Orbital file
+    version = [str(x).zfill(2) for x in np.arange(2)]
+    for ver in version:
+        print(f"try to download different version of data ")
+        try:
+            poshist  = f"glg_poshist_all_{str(year)[2:]}{month}{day}_v{ver}.fit"
+            if os.path.exists(os.path.join(out_dir, poshist)):
+                print(f"...{poshist} already exists...")
             else:
-                url = os.path.join(ftp_link, year, month, day, 'current', evtfiles)
-                wget.download(url, out_dir)
+                url = os.path.join(ftp_link, year, month, day, 'current', poshist)
+                print(f"Downloading {url}")
+                wget.download(url, out_dir+'/')
+        except:
+            continue
 
+    # Download NaI Data
+    if (not 'b0' in detectors) & (not 'b1' in detectors):
+        for ver in version:
+            print(f"try to download different version of data ")
+            try:
+            # Download Events
+                for det in detectors:
+                    for hour in np.linspace(0, 23, 24, dtype=int):
+                        hstr = str(hour).zfill(2)
+                        evtfile = f"glg_tte_{det}_{str(year)[2:]}{month}{day}_{hstr}z_v{ver}.fit.gz"
+                        if os.path.exists(os.path.join(out_dir, evtfile)):
+                            continue
+                        else:
+                            url = os.path.join(ftp_link, year, month, day, 'current', evtfile)
+                            print(f"Downloading {url}")
+                            wget.download(url, out_dir)
+            except:continue
+
+    # Download NaI/BGO Data
+    if ('b0' in detectors) or ('b1' in detectors):
+        for ver in version:
+            print(f"try to download different version of data ")
+            try:
+            # Download Events
+                for det in ['b0', 'b1']:
+                    for hour in np.linspace(0, 23, 24, dtype=int):
+                        hstr = str(hour).zfill(2)
+                        evtfile = f"glg_tte_{det}_{str(year)[2:]}{month}{day}_{hstr}z_v{ver}.fit.gz"
+                        if os.path.exists(os.path.join(out_dir, evtfile)):
+                            continue
+                        else:
+                            url = os.path.join(ftp_link, year, month, day, 'current', evtfile)
+                            print(f"Downloading {url}")
+                            wget.download(url, out_dir)
+            except:continue
 
 def _resolve_evtname(evtfile):
     """
@@ -274,12 +306,12 @@ def _resolve_evtname(evtfile):
     hdulist = fits.open(evtfile)
 
     det_shortname = filename.split('_')[2]
-    if len(hdulist) < 4:
-        ## File Error
-        raise IOError("File {} extension error".format(filename)) 
-    det_headname = hdulist[2].header['DETNAM']
-    met = hdulist[2].data.field("TIME")
-    pha = hdulist[2].data.field("PHA")
+#    if len(hdulist) < 4:
+#        ## File Error
+#        raise IOError("File {} extension error".format(filename)) 
+    det_headname = hdulist["EVENTS"].header['DETNAM']
+    met = hdulist["EVENTS"].data.field("TIME")
+    pha = hdulist["EVENTS"].data.field("PHA")
     return det_shortname, det_headname, met, pha
 
 def save_to_fits(outname, data, names):
