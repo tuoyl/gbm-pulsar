@@ -83,10 +83,13 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
         #mi, ma = t.searchsorted([minmet,maxmet])
         #t = t[mi:ma]/86400.+mjdref
         mask = (t>minmet-1)&(t<maxmet+1)
-        t = t[(t>minmet-1)&(t<maxmet+1)]/86400 + mjdref
+        t = t[mask]/86400 + mjdref
+        if t.size == 0:
+            print(f">>> Orbit Time not cover data")
+            return None
 
         # interpolate orbit to observed time and convert to km and km/s
-        try:
+        if 'pos_x' in [x.lower() for x in orbit[1].data.names]:
             x_s = np.interp(date, t, orbit[1].data.field('pos_x')[mask]/1000.)
             y_s = np.interp(date, t, orbit[1].data.field('pos_y')[mask]/1000.)
             z_s = np.interp(date, t, orbit[1].data.field('pos_z')[mask]/1000.)
@@ -94,7 +97,7 @@ def barycor(date,ra,dec, orbit=False, return_correction=True, approx_einstein=10
             vx_s = np.interp(date, t, orbit[1].data.field('vel_x')[mask]/1000.)
             vy_s = np.interp(date, t, orbit[1].data.field('vel_y')[mask]/1000.)
             vz_s = np.interp(date, t, orbit[1].data.field('vel_z')[mask]/1000.)
-        except:
+        elif 'x' in [x.lower() for x in orbit[1].data.names]:
             x_s = np.interp(date, t, orbit[1].data.field('x')[mask]/1000.)
             y_s = np.interp(date, t, orbit[1].data.field('y')[mask]/1000.)
             z_s = np.interp(date, t, orbit[1].data.field('z')[mask]/1000.)
