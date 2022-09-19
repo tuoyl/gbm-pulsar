@@ -173,14 +173,23 @@ def filter(GBM_poshist, detector, radec, met, angle_incident=70, retrieve_mask=F
 if __name__ == "__main__":
 
     pos_file = "test/glg_poshist_all_220301_v00.fit"
-    evt_file = "test/glg_tte_n0_220301_00z_v00.fit.gz"
+    evt_file = "test/glg_tte_n0_220301_00z_v10.fit.gz"
+    evt_file = "test/glg_tte_b0_220301_10z_v00.fit.gz"
     hdulist = fits.open(evt_file)
     met = hdulist[2].data.field("TIME")
     PI  = hdulist[2].data.field("PHA")
-    clean_time, mask = fileter(pos_file,
-            'n1',
+    bins = np.arange(met.min(), met.max(), 1)
+    y, x = np.histogram(met, bins)
+    plt.figure()
+    plt.errorbar(x[:-1], y)
+    clean_time, mask = filter(pos_file,
+            'b0',
             np.array([83.22, 22.01]),
             met=met,
             angle_incident=70,
             retrieve_mask=True)
     print(clean_time, mask)
+    y, x = np.histogram(clean_time, bins)
+    plt.errorbar(x[:-1], y)
+    plt.show()
+

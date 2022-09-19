@@ -206,7 +206,7 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
 
     event_list = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
-                "glg_tte_n*_{}{}{}_{}z_v*.fit.gz".format(year[2:], month, day, hour)))
+                "glg_tte_*_{}{}{}_{}z_v*.fit.gz".format(year[2:], month, day, hour)))
     poshist = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
                 "glg_poshist_all_{}{}{}_v*.fit".format(year[2:], month, day)))
@@ -382,7 +382,7 @@ def main():
         for hour in np.linspace(0, 23, 24, dtype=int):
             met_one_hour = np.array([])
             pha_one_hour = np.array([])
-            det_one_hour = np.array([])
+            det_one_hour = []
 
             for evtfile in tqdm(evtfiles):
                 if os.path.basename(evtfile).split('_')[4] != str(hour).zfill(2)+'z':
@@ -404,8 +404,9 @@ def main():
                         met_filtered)
                 pha_one_hour = np.append(pha_one_hour,
                         pha[mask])
-                det_one_hour = np.append(det_one_hour,
-                        np.ones(mask.size)*int(det_headname.split('_')[1]))
+                #det_one_hour = np.append(det_one_hour,
+                #        np.ones(mask.size)*int(det_headname.split('_')[1]))
+                det_one_hour.append([det_headname]*met_filtered.size)
 
             # empty
             if met_one_hour.size == 0:
@@ -425,8 +426,8 @@ def main():
                         jplephem=args.jplephem,
                         accelerate=args.accelerate)
                 TDB_one_hour = met_one_hour + delta_t
-                OUT_DATA = [met_one_hour, pha_one_hour, TDB_one_hour]
-                OUT_COLN = ['TIME', "PHA", "TDB"]
+                OUT_DATA = [met_one_hour, pha_one_hour, TDB_one_hour, det_one_hour]
+                OUT_COLN = ['TIME', "PHA", "TDB", "DET"]
             else:
                 OUT_DATA = [met_one_hour, pha_one_hour]
                 OUT_COLN = ['TIME', "PHA"]
