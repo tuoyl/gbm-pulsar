@@ -384,7 +384,7 @@ def main():
             pha_one_hour = np.array([])
             det_one_hour = []
 
-            for evtfile in tqdm(evtfiles):
+            for evtfile in tqdm(evtfiles, desc=f"Analyzing data in {hour+1}/24 hour of one day"):
                 if os.path.basename(evtfile).split('_')[4] != str(hour).zfill(2)+'z':
                     continue
                 try:
@@ -415,6 +415,7 @@ def main():
 
             # Barycentric Correction
             if args.barycor:
+                print("...Barycentre correction...")
                 orbit = fits.open(poshist)
                 mjdreff = orbit[1].header['mjdreff']
                 mjdrefi = orbit[1].header['mjdrefi']
@@ -425,6 +426,8 @@ def main():
                         orbit=poshist,
                         jplephem=args.jplephem,
                         accelerate=args.accelerate)
+                if delta_t is None:
+                    continue
                 TDB_one_hour = met_one_hour + delta_t
                 OUT_DATA = [met_one_hour, pha_one_hour, TDB_one_hour, det_one_hour]
                 OUT_COLN = ['TIME', "PHA", "TDB", "DET"]
@@ -434,6 +437,7 @@ def main():
 
             # Save data
             outname = os.path.join(args.output_dir, args.stem+"_{}_{}z.fits".format(next_day, str(hour).zfill(2)))
+            print(f"...Saving to FITS {outname}...")
             #TODO store_pha, store_det, and energy selection not available
             save_to_fits(outname, OUT_DATA, OUT_COLN)
         next_day += one_day
