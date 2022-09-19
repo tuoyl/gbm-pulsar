@@ -24,6 +24,47 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 from gbm.data.poshist import PosHist
 
+def src_j2000_to_elv(ra, dec, x_sc, y_sc, z_sc):
+    """
+    calculate the ELV for given source with RA, DEC (J2000)
+
+    Parameter
+    ---------
+    ra: float
+        Right ascension
+    dec: float
+        Declination
+    x_sc: array-like
+        The x position in cartesian coordinates of spacecraft
+    y_sc: array-like
+        The y position in cartesian coordinates of spacecraft
+    z_sc: array-like
+        The z position in cartesian coordinates of spacecraft
+
+    Return
+    ------
+    elv: array-like
+        The elivation angle (<0 is blocked by Earth)
+    """
+
+    #x, y, z of source
+    x_src, y_src, z_src = radec_to_xyz(ra, dec)
+
+    #vector dot
+    x_sc = -x_sc
+    y_sc = -y_sc
+    z_sc = -z_sc
+
+    dot_value = x_src*x_sc + y_src*y_sc + z_src*z_sc
+
+    #mol of vector_src and vector_sc
+    mol_src = np.sqrt(x_src**2 + y_src**2 + z_src**2)
+    mol_sc  = np.sqrt(x_sc**2  + y_sc**2  + z_sc**2)
+
+    elv = np.rad2deg( np.arccos( dot_value/(mol_src * mol_sc) )) - 67.01571812044855
+
+    return elv
+
 def xyz2radec(xyz):
     """
     provided by Xiao Shuo
@@ -122,14 +163,17 @@ def filter(GBM_poshist, detector, radec, met, angle_incident=70, retrieve_mask=F
 
         mask: array (bool)
             if retrieve_mask=True
-
-
     """
 
     poshist = PosHist.open(GBM_poshist)
     hdulist = fits.open(GBM_poshist)
     tstart = hdulist[1].header['TSTART']
     tstop  = hdulist[1].header['TSTOP']
+    sclk_utc = hdulist[1].data['sclk_utc']
+    pos_x  = hdulist[1].data['POS_X']
+    pos_y  = hdulist[1].data['POS_Y']
+    pos_z  = hdulist[1].data['POS_Z']
+
 
     mask = np.ones(met.size, dtype=bool)
     met_raw = met
@@ -163,6 +207,19 @@ def filter(GBM_poshist, detector, radec, met, angle_incident=70, retrieve_mask=F
     #        met_filtered = np.append(met_filtered,
     #                met_raw[mask])
     mask = (mask&mask_gtis)
+
+    ## Filter ELV for mask
+    mask_elv = np.zeros(met_raw.size, dtype=bool)
+    for i in range(segments-1):
+        idx_seg = np.searchsorted(sclk_utc, met_edges[i])
+        elv = src_j2000_to_elv(radec[0], radec[1],
+                               pos_x[idx_seg],
+                               pos_y[idx_seg],
+                               pos_z[idx_seg])
+        if elv > 0:
+            mask_elv = mask_elv | ((met_raw>=met_edges[i])&(met_raw<=met_edges[i+1]))
+    mask = (mask&mask_elv)
+
     met_filtered = met_raw[mask]
     if retrieve_mask:
         return met_filtered, mask
