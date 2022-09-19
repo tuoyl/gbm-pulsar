@@ -384,7 +384,7 @@ def main():
             pha_one_hour = np.array([])
             det_one_hour = []
 
-            for evtfile in tqdm(evtfiles, desc=f"Analyzing data in {hour+1}/24 hour of one day"):
+            for evtfile in tqdm(sorted(evtfiles), desc=f"Analyzing data in {hour+1}/24 hour of one day"):
                 if os.path.basename(evtfile).split('_')[4] != str(hour).zfill(2)+'z':
                     continue
                 try:
@@ -404,9 +404,7 @@ def main():
                         met_filtered)
                 pha_one_hour = np.append(pha_one_hour,
                         pha[mask])
-                #det_one_hour = np.append(det_one_hour,
-                #        np.ones(mask.size)*int(det_headname.split('_')[1]))
-                det_one_hour.append([det_headname]*met_filtered.size)
+                det_one_hour += [f"{det_headname}"]*met_filtered.size
 
             # empty
             if met_one_hour.size == 0:
