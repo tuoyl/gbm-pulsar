@@ -48,7 +48,7 @@ def src_j2000_to_elv(ra, dec, x_sc, y_sc, z_sc):
     """
 
     #x, y, z of source
-    x_src, y_src, z_src = radec_to_xyz(ra, dec)
+    x_src, y_src, z_src = radec2xyz(ra, dec)
 
     #vector dot
     x_sc = -x_sc
