@@ -22,13 +22,13 @@ The detailed processes of the pipeline are:
 ## Example
 
 ```
-python GBM_pulsar_pipeline.py --gbm_dir="/path/to/GRM/data" \
+gbm-pulsar-pipeline --gbm_dir="/path/to/GRM/data" \
         --tstart='2022-07-27T00:00:00' --tstop='2022-07-28T00:00:00' \
         --output_dir="/path/to/save/data" \
         --stem="gbmCrab" --ra=83.63321666666667 --dec=22.01446388888889 \
         --barycor --accelerate
 ```
-The above command filters the data between `2022-07-27T00:00:00` and `2022-07-28T00:00:00`. 
+After install the package, the executable command `gbm-pulsar-pipeline` are implemented in you python environment. The above command filters the data between `2022-07-27T00:00:00` and `2022-07-28T00:00:00`. 
 
 `--barycor` flag is used, then the output FITS file contains the column `TDB` which is the time in barycentric center.
 
@@ -40,7 +40,7 @@ The above command filters the data between `2022-07-27T00:00:00` and `2022-07-28
 some optional:
 
 ```
-python GBM_pulsar_pipeline.py --gbm_dir="/path/to/GRM/data" \
+gbm-pulsar-pipeline --gbm_dir="/path/to/GRM/data" \
         --tstart='2022-07-27T00:00:00' --tstop='2022-07-28T00:00:00' \
         --output_dir="/path/to/save/data" \
         --stem="gbmCrab" --ra=83.63321666666667 --dec=22.01446388888889 \
