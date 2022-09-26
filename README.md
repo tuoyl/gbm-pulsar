@@ -1,15 +1,41 @@
 # gbm-pulsar
-A GBM tool for X-ray pulsar analysis
+A tool to filter the Fermi/GBM data for pulsar analysis.
 
-Example:
+## Independencies
+   - gbm-data-tool: The official GBMtools required to calculate the direction of each detector
+   - jplephem: JPL solar ephemeris package required to execute the barycentric correction
+   
+## Install the packge
+Download the whole gbm-pulsar package and unzip the compressed file. At the directory that contains the `setup.py` file and execute:
+
+`pip install -e .`
+
+## Processes
+
+The detailed processes of the pipeline are:
+   1. select all data for each detector (NaI and BGO) within an angle of 70 degrees to the given target source.
+   2. exclude all data that obscure by Earth
+   3. carry out the Barrycentric correction for each photon
+   
+
+
+## Example
 
 ```
 python GBM_pulsar_pipeline.py --gbm_dir="/path/to/GRM/data" \
         --tstart='2022-07-27T00:00:00' --tstop='2022-07-28T00:00:00' \
         --output_dir="/path/to/save/data" \
         --stem="gbmCrab" --ra=83.63321666666667 --dec=22.01446388888889 \
-        --barycor --jplephem="./barycor/de421.bsp"
+        --barycor --accelerate
 ```
+The above command filters the data between `2022-07-27T00:00:00` and `2022-07-28T00:00:00`. 
+
+`--barycor` flag is used, then the output FITS file contains the column `TDB` which is the time in barycentric center.
+
+`--accelerate` flag is often used to accelate the proccess of barycentric correction. The algorithm is:
+   - divide the data into 60 segments
+   - calculate barycentric-corrected time for those 60 time at the edge of each segment
+   - interpolate the barycentric-corrected time for each photon according to those 60 values
 
 some optional:
 
