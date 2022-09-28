@@ -18,7 +18,7 @@ URL = 'https://github.com/tuoyl/gbm-pulsar'
 EMAIL = 'tuoyl@ihep.ac.cn'
 AUTHOR = 'Youli Tuo'
 REQUIRES_PYTHON = '>=3.6.0'
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
