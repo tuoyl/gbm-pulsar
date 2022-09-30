@@ -2,7 +2,7 @@
 A tool to filter the Fermi/GBM data for pulsar analysis.
 
 ## Independencies
-   - gbm-data-tool: The official GBMtools required to calculate the direction of each detector
+   - gbm-data-tool: The official GBMtools required to calculate the direction of each detector (https://fermi.gsfc.nasa.gov/ssc/data/analysis/rmfit/gbm_data_tools/gdt-docs/install.html)
    - jplephem: JPL solar ephemeris package required to execute the barycentric correction
    
 ## Install the packge
@@ -13,7 +13,8 @@ Download the whole gbm-pulsar package and unzip the compressed file. At the dire
 ## Processes
 
 The detailed processes of the pipeline are:
-   1. select all data for each detector (NaI and BGO) within an angle of 70 degrees to the given target source.
+   1. select all data for each NaI detector NaI within an angle of 70 degrees to the given target source. For BGO detector, no incident angle selection is required because the satellite is transparent to
+      such high energy photons.
    2. exclude all data that obscure by Earth
    3. carry out the Barrycentric correction for each photon
    
