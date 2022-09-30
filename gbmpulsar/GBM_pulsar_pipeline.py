@@ -157,6 +157,16 @@ def parse_args():
 
     return parser.parse_args()
 
+def _is_BGO(det_shortname):
+    """
+    check whether the detector (name is the short name like 'b0', 'b1', 'n1', ) is BGO
+    """
+    if det_shortname == 'b0':
+        return True
+    if det_shortname == 'b1':
+        return True
+    return False
+
 def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='left'):
     """
     return all available data in specific day
@@ -206,7 +216,7 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
 
     event_list = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
-                "glg_tte_*_{}{}{}_{}z_v*.fit.gz".format(year[2:], month, day, hour)))
+                "glg_tte_*_{}{}{}_{}z_v*.fit*".format(year[2:], month, day, hour)))
     poshist = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
                 "glg_poshist_all_{}{}{}_v*.fit".format(year[2:], month, day)))
@@ -392,12 +402,22 @@ def main():
                 except IOError:
                     print("file {} Extension error".format(evtfile))
                     continue
-                met_filtered, mask = filter(poshist,
-                        detector=det_shortname,
-                        radec=np.array([args.ra, args.dec]),
-                        met=met,
-                        angle_incident=70,
-                        retrieve_mask=True)
+
+                ## BGO data do not filter by the incident angle
+                if _is_BGO(det_shortname):
+                    met_filtered, mask = filter(poshist,
+                            detector=det_shortname,
+                            radec=np.array([args.ra, args.dec]),
+                            met=met,
+                            angle_incident=360,
+                            retrieve_mask=True)
+                else:
+                    met_filtered, mask = filter(poshist,
+                            detector=det_shortname,
+                            radec=np.array([args.ra, args.dec]),
+                            met=met,
+                            angle_incident=70,
+                            retrieve_mask=True)
 
                 # store
                 met_one_hour = np.append(met_one_hour,
