@@ -180,7 +180,7 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
     hour: string or int
         if 'all': retrieve all hourly data
         if is `int`: then the hour is the creteria to select date before/after
-        the hour (include) in the day, use the parameter `direction` to select
+        the hour (included) in the day, use the parameter `direction` to select
         the data {'left':before the hour; 'right':after the hour}.
 
     direction: string
@@ -201,29 +201,38 @@ def get_one_day_files(gbm_data_dir, year, month, day, hour='all', direction='lef
     day  = str(day).zfill(2)
     if hour == 'all':
         hour = '*'
+        event_list = glob.glob(
+                os.path.join(gbm_data_dir, year, month, day, 'current',
+                    "glg_tte_*_{}{}{}_{}z_v*.fit*".format(year[2:], month, day, hour)))
+        hour_list = np.arange(0, 24)
     elif direction == 'left':
         hour = int(hour)
-        hour = np.linspace(0, hour, hour+1, dtype=int)
-        #hour = '[{}]'.format( ','.join([str(x) for x in hour]) )
-        hour = '*'
-        # FIXME: now whole day is used, hour does not working
+        hour = np.arange(0, hour+1, dtype=int)
+
+        event_list = []
+        for h in hour:
+            event_list += glob.glob(
+                                    os.path.join(gbm_data_dir, year, month, day, 'current',
+                                                "glg_tte_*_{}{}{}_{}z_v*.fit*".format(year[2:], month, day, h)))
+        hour_list = hour
     elif direction == 'right':
         hour = int(hour)
-        hour = np.linspace(hour, 23, 24-hour, dtype=int)
-        #hour = '[{}]'.format( ','.join([str(x) for x in hour]) )
-        hour = '*'
-        # FIXME: now whole day is used, hour does not working
+        hour = np.arange(hour, 24, dtype=int)
 
-    event_list = glob.glob(
-            os.path.join(gbm_data_dir, year, month, day, 'current',
-                "glg_tte_*_{}{}{}_{}z_v*.fit*".format(year[2:], month, day, hour)))
+        event_list = []
+        for h in hour:
+            event_list += glob.glob(
+                                    os.path.join(gbm_data_dir, year, month, day, 'current',
+                                                "glg_tte_*_{}{}{}_{}z_v*.fit*".format(year[2:], month, day, h)))
+        hour_list = hour
+
     poshist = glob.glob(
             os.path.join(gbm_data_dir, year, month, day, 'current',
                 "glg_poshist_all_{}{}{}_v*.fit".format(year[2:], month, day)))
     if len(poshist) != 0:
         poshist = poshist[-1]
 
-    return event_list, poshist
+    return event_list, poshist, hour_list
 
 def retrieve_data(data_dir, year, month, day,
         ftp_link="https://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/daily/",
@@ -368,18 +377,18 @@ def main():
 
         if next_day == begin_day:
             # first or last day, deal with the hour
-            evtfiles, poshist = get_one_day_files(args.gbm_dir,
+            evtfiles, poshist, hour_list = get_one_day_files(args.gbm_dir,
                     year, month, day,
-                    hour=args.tstart.split(':')[1],
+                    hour=args.tstart.split('T')[1].split(':')[0],
                     direction='right')
         elif next_day == end_day:
             # first or last day, deal with the hour
-            evtfiles, poshist = get_one_day_files(args.gbm_dir,
+            evtfiles, poshist, hour_list = get_one_day_files(args.gbm_dir,
                     year, month, day,
-                    hour=args.tstop.split(':')[1],
+                    hour=args.tstop.split('T')[1].split(':')[0],
                     direction='left')
         else:
-            evtfiles, poshist = get_one_day_files(args.gbm_dir,
+            evtfiles, poshist, hour_list = get_one_day_files(args.gbm_dir,
                     year, month, day,
                     hour='all')
 
@@ -389,7 +398,7 @@ def main():
             continue
 
         # Save the data hourly! Dayly will cost a lot of RAM
-        for hour in np.linspace(0, 23, 24, dtype=int):
+        for hour in hour_list:
             met_one_hour = np.array([])
             pha_one_hour = np.array([])
             det_one_hour = []
@@ -399,8 +408,8 @@ def main():
                     continue
                 try:
                     det_shortname, det_headname, met, pha = _resolve_evtname(evtfile)
-                except IOError:
-                    print("file {} Extension error".format(evtfile))
+                except:
+                    print("file {} could not proper read".format(evtfile))
                     continue
 
                 ## BGO data do not filter by the incident angle
