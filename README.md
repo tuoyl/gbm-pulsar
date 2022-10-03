@@ -1,6 +1,8 @@
 # gbm-pulsar
 A tool to filter the Fermi/GBM data for pulsar analysis.
 
+[![Upload Python Package](https://github.com/tuoyl/gbm-pulsar/actions/workflows/python-publish.yml/badge.svg)](https://github.com/tuoyl/gbm-pulsar/actions/workflows/python-publish.yml)
+
 ## Independencies
    - gbm-data-tool: The official GBMtools required to calculate the direction of each detector (https://fermi.gsfc.nasa.gov/ssc/data/analysis/rmfit/gbm_data_tools/gdt-docs/install.html)
    - jplephem: JPL solar ephemeris package required to execute the barycentric correction
