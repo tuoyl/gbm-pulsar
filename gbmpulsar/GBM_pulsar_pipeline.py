@@ -126,6 +126,12 @@ def parse_args():
             help="specify the JPLEPH file")
 
     parser.add_argument(
+            "--angle",
+            type=float,
+            default=70,
+            help="The incident angle to filter the data")
+
+    parser.add_argument(
             "--energylow",
             type=float,
             required=False,
@@ -425,7 +431,7 @@ def main():
                             detector=det_shortname,
                             radec=np.array([args.ra, args.dec]),
                             met=met,
-                            angle_incident=70,
+                            angle_incident=args.angle,
                             retrieve_mask=True)
 
                 # store
